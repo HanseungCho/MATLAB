@@ -55,7 +55,7 @@ xlim([0, 1/(10^5)])
 subplot(3,1,3)
 plot(t, Tx)
 title("Spreaded signal with modulation")
-xlim([0, 1/(10^6)])
+xlim([0, 1/(10^5)])
 
 figure(2)
 plot(f, FFT, 'r')
@@ -92,4 +92,4 @@ cf=linspace(-fs/2, fs/2, length(caf));
 psd=abs(caf).^2;
 plot(cf, psd);
 xlabel('x=cylic frequency')
-ylabel(sprintf('y=cyclic autocorrelation (tau = %d)', tau(p)*(1/fs)))
+ylabel(sprintf('y=cyclic autocorrelation (tau = %d)', tau(p)*fs))

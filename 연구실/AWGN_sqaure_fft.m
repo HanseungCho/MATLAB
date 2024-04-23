@@ -55,7 +55,5 @@ PAM_quadratic=PAM.*(circshift(PAM, taau));
 cyclic_autocorr=abs(fftshift(fft(PAM_quadratic)));
 cyclic_f=linspace(-fs/2,fs/2,length(cyclic_autocorr));
 plot3(cyclic_f, tau, cyclic_autocorr);
-xlabel('x=cylic frequency')
-ylabel('y=tau')
-zlabel('z=cyclic autocorrelation')
+c
 title('PAM cyclic autocorrelation')
