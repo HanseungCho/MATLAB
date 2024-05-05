@@ -50,39 +50,41 @@ for g=1:length(f)
     end
     Inphase_f(g,:)=Inphase_f_mem(1,:);
 end
-for l=1:14
+l=2;
 %%%%%%%%%%%%%%%%%%%%%%%%%Rx signal with demodulation%%%%%%%%%%%
-    noise=randn(1,length(Tx))*sig(l)+1j*randn(1,length(Tx))*sig(l);
-    Rx=Tx+noise;
-    for g=1:length(f)
-        Rx_I(g,:)=real(Rx) .*Inphase_f(g,:);
-    end
-    Rx_bits=zeros(1,N);
-    bit_binary_Index=[];
-    for k=1:N/bits_for_symbol
-        for g=1:length(f)  
-            Rx_I_symbol(g,:)=Rx_I(g,(k-1)*D+1 : k*D);
-            z(g)=sum(Rx_I_symbol(g,:));
-        end
-    %%%%%%%%%%%%%%%decision%%%%%%%%%%%%%%%%%%
-        [sup,Index]=max(z); 
-        binary_Index=de2bi(Index-1, bits_for_symbol, 'left-msb');
-        bit_binary_Index=[bit_binary_Index, binary_Index];       
-        if Index==(symbols_decimal(k)+1)
-            sym_error_count(l)=sym_error_count(l)+0;
-        else 
-            sym_error_count(l)=sym_error_count(l)+1;
-        end
-    end
-    bit_error_count(l)=sum(bit_binary_Index ~= bits);
-    BER(l)=bit_error_count(l)/N;
-    SER(l)=sym_error_count(l)/(N/bits_for_symbol);
+noise=randn(1,length(Tx))*sig(l)+1j*randn(1,length(Tx))*sig(l);
+Rx=Tx+noise;
+for g=1:length(f)
+    Rx_I(g,:)=real(Rx) .*Inphase_f(g,:);
 end
+Rx_bits=zeros(1,N);
+bit_binary_Index=[];
+for k=1:N/bits_for_symbol
+    for g=1:length(f)  
+        Rx_I_symbol(g,:)=Rx_I(g,(k-1)*D+1 : k*D);
+        z(g)=sum(Rx_I_symbol(g,:));
+    end
+%%%%%%%%%%%%%%%decision%%%%%%%%%%%%%%%%%%
+    [sup,Index]=max(z); 
+    binary_Index=de2bi(Index-1, bits_for_symbol, 'left-msb');
+    bit_binary_Index=[bit_binary_Index, binary_Index];       
+    if Index==(symbols_decimal(k)+1)
+        sym_error_count(l)=sym_error_count(l)+0;
+    else 
+        sym_error_count(l)=sym_error_count(l)+1;
+    end
+end
+bit_error_count(l)=sum(bit_binary_Index ~= bits);
+BER(l)=bit_error_count(l)/N;
+SER(l)=sym_error_count(l)/(N/bits_for_symbol);
 
-x=-3:10;
-[ber,ser]=berawgn(ebn0_db,'fsk',M,'coherent'); 
-semilogy(x,BER, x, ber, '-ro',x, SER,x,ser,'-o');
-legend('AWGN BER', 'theo AWGN BER', 'AWGN SER', 'theo AWGN SER');
 
+%x=-3:10;
+%[ber,ser]=berawgn(ebn0_db,'fsk',M,'coherent'); 
+%semilogy(x,BER, x, ber, '-ro',x, SER,x,ser,'-o');
+%legend('AWGN BER', 'theo AWGN BER', 'AWGN SER', 'theo AWGN SER');
+plot(t, Tx)
+f=linspace(Fs/2, Fs/2, length(Tx));
 plot(f, abs(fftshift(fft(Tx))))
-plot(f, abs(fftshift(fft(Tx))))
+hold on
+plot(f, abs(fftshift(fft(noise))))
