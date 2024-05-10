@@ -1,7 +1,7 @@
 clc; 
 clear;
 close all
-for p
+
 N_bit=5000;
 %임의의 PSK 신호 생성
 SNR=0;
@@ -39,6 +39,7 @@ Rx=awgn(Tx, SNR, 'measured');%SNR db scale
 
 
 f=linspace(-fs/2,fs/2-fs/length(Tx),length(Tx));
+
 %신호 plot
 figure(1)
 subplot(3,1,1)
