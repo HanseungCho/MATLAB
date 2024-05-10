@@ -1,6 +1,7 @@
 clc; 
 clear;
 close all
+for p
 N_bit=5000;
 %임의의 PSK 신호 생성
 SNR=0;
@@ -15,7 +16,7 @@ PN=comm.PNSequence('Polynomial',[1 0 0 0 1 1 0 1], 'SamplesPerFrame', 127, 'Init
 pn=PN();
 Processing_Gain=length(pn);
 Rc=Processing_Gain/Tb;%chip rate => chip rate
-fs=(1/Tb)*length(pn)*oversamplingrate;%sampling frequency = 10^9Hz
+fs=(1/Tb)*length(pn)*oversamplingrate;
 
 for k=1:length(bits)
     over_bits(length(pn)*(k-1)+1:length(pn)*k)=bits(k);
@@ -38,7 +39,6 @@ Rx=awgn(Tx, SNR, 'measured');%SNR db scale
 
 
 f=linspace(-fs/2,fs/2-fs/length(Tx),length(Tx));
-
 %신호 plot
 figure(1)
 subplot(3,1,1)
