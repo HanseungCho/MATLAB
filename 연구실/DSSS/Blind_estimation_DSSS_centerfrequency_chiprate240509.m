@@ -4,7 +4,7 @@ close all
 
 N_bit=5000;
 %임의의 PSK 신호 생성
-SNR=0;
+SNR=-10;
 M=2;
 bits=2*randi([0,1], N_bit,1)-1; %BPSK
 Tb=1/(10^5); %bit duration
@@ -36,7 +36,7 @@ rcfilter = comm.RaisedCosineTransmitFilter('Shape', 'Square root', ...
 waveform0=rcfilter(spreaded_bits.').';
 Tx=waveform0.*cos(2*pi*fc*t+pi/6);
 Rx=awgn(Tx, SNR, 'measured');%SNR db scale
-
+%Rx=Tx;
 
 f=linspace(-fs/2,fs/2-fs/length(Tx),length(Tx));
 
@@ -54,6 +54,8 @@ subplot(3,1,3)
 plot(t, waveform0)
 title("Spreaded signal in baseband")
 xlim([0, 1/(10^6)])
+set(gcf, 'Color', 'w'); % figure 배경을 흰색으로 설정
+set(gca, 'Color', 'w'); % axes 배경을 흰색으로 설정
 
 
 
@@ -65,6 +67,9 @@ figure(2)
 plot(cf, Rx_psd);
 xlabel('x=cylic frequency')
 ylabel('y=cyclic autocorrelation')
+set(gcf, 'Color', 'w'); % figure 배경을 흰색으로 설정
+set(gca, 'Color', 'w'); % axes 배경을 흰색으로 설정
+
 [sortedValues, sortedIndices] = sort(Rx_psd, 'descend');
 top3=sortedIndices(1:3); 
 for k=1:3
@@ -99,12 +104,17 @@ title("passband waveform")
 ylim([0 3*10^4])
 subplot(1,4,3)
 plot(f, Rx_FFT)
-title("passband waveform with noise")
+%title("signal with noise")
+xlabel('x=frequency')
+ylabel('y=FFT')
 ylim([0 3*10^4])
 subplot(1,4,4)
 plot(f, abs(downRx_FFT), 'b')
 title("baseband waveform downconversed")
 ylim([0 3*10^4])
+set(gcf, 'Color', 'w'); % figure 배경을 흰색으로 설정
+set(gca, 'Color', 'w'); % axes 배경을 흰색으로 설정
+
 
 figure(4)
 basebandRx=ifft(ifftshift(downRx_FFT));
@@ -112,6 +122,9 @@ basebandRx=ifft(ifftshift(downRx_FFT));
 plot(cf, basebandRx_psd);
 xlabel('x=cylic frequency')
 ylabel('y=cyclic autocorrelation')
+set(gcf, 'Color', 'w'); % figure 배경을 흰색으로 설정
+set(gca, 'Color', 'w'); % axes 배경을 흰색으로 설정
+
 
 basebandRx_psd0=basebandRx_psd;
 %CFAR 
@@ -120,18 +133,23 @@ basebandRx_psd0(index0) = 0;
 cells=length(basebandRx_psd0)/(10^4)/2;
 numGuardCells=round(cells*0.01);
 numRefCells=round(cells*0.99);
-thresholdFactor=10;
+thresholdFactor=5;
 [cfar_targets] = cfar_ca_1D(basebandRx_psd0, numGuardCells, numRefCells, thresholdFactor);
 figure(5)
-plot(cf, basebandRx_psd0, 'b');
-hold on;
-m=mean(basebandRx_psd0);
-peaks=(cfar_targets.') .* basebandRx_psd0;
-index1=find((peaks > m));
-[chiprate, indexi] = max(cf(index1));
-scatter(cf(index1), basebandRx_psd0(index1), 'r*');
-title('CFAR Target Detection');
-legend('Input Signal', 'Detected Peaks');
-sprintf("Estimated chip rate: %d", chiprate)
+plot(cf, basebandRx_psd0);
+xlabel('x=cylic frequency')
+ylabel('y=cyclic autocorrelation')
+set(gcf, 'Color', 'w'); % figure 배경을 흰색으로 설정
+set(gca, 'Color', 'w'); % axes 배경을 흰색으로 설정
+
+%hold on;
+%m=mean(basebandRx_psd0);
+%peaks=(cfar_targets.') .* basebandRx_psd0;
+%index1=find((peaks > m));
+%[chiprate, indexi] = max(cf(index1));
+%scatter(cf(index1), basebandRx_psd0(index1), 'r*');
+%title('CFAR Target Detection');
+%legend('Input Signal', 'Detected Peaks');
+%sprintf("Estimated chip rate: %d", chiprate)
 %평균 보다 작아지는 지점 찾기 => 해당 지점을 평균을로 하는 gaussian kernel을 곱함
-[index1v, index1index]=max(basebandRx_psd0<m);
+%[index1v, index1index]=max(basebandRx_psd0<m);
