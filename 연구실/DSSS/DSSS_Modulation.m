@@ -1,0 +1,154 @@
+clc; 
+clear;
+close all
+N_bit=100;
+%임의의 PSK 신호 생성
+%BPSK
+M1=2;
+symbol1 = randi([0 M1-1], N_bit, 1);
+s1=pskmod(symbol1, M1);
+%QPSK
+M2=2;
+symbol2 = randi([0 M2-1], N_bit, 1);
+s2=pskmod(symbol2, M2, pi/M1);
+
+M=2;
+bits=2*randi([0,1], N_bit,1)-1; %BPSK
+Tb=1/(10^5); %bit duration
+oversamplingrate=4; %1chip=4samples
+fc=1*10^8; %80MHz=8*10^7Hz
+PN=comm.PNSequence('Polynomial',[1 0 0 0 1 1 0 1], 'SamplesPerFrame', 127, 'InitialConditions',[0 0 0 0 0 0 1]);
+pn=PN();
+Processing_Gain=length(pn);
+Rc=Processing_Gain/Tb;%chip rate => chip rate=null-to-null bandwidth = 10^7Hz
+fs=(1/Tb)*length(pn)*oversamplingrate;%sampling frequency = 10^9Hz
+
+for k=1:length(bits)
+    over_bits(length(pn)*(k-1)+1:length(pn)*k)=bits(k);
+    spreaded_bits(length(pn)*(k-1)+1:length(pn)*k)=bits(k)*(2*pn-1);
+end
+
+oversampled_bits=repelem(over_bits,oversamplingrate);
+oversampled_spreaded_bits=repelem(spreaded_bits,oversamplingrate);
+oversampled_s1_bits=repelem(s1, oversamplingrate*Processing_Gain);
+oversampled_s2_bits=repelem(s2, oversamplingrate*Processing_Gain);
+
+ebn0_db=-3:10; 
+esn0=zeros(1,14);
+sig=zeros(1,14);
+bits_for_symbol=1;
+for k=1:14
+    esn0_db=ebn0_db+10*log10(bits_for_symbol); 
+    esn0(k)=10^(esn0_db(k)/10); 
+    sig(k)=sqrt(1/(2*esn0(k)));
+end
+t=linspace(0,(length(bits)*Tb)-(1/fs),length(oversampled_spreaded_bits));
+f=linspace(-fs/2,fs/2,length(oversampled_spreaded_bits));
+mem0=oversampled_spreaded_bits.*cos(2*pi*fc*t);
+f1=fc*0.95;
+f2=fc*1.2;
+mem1=cos(2*pi*f1*t+angle(oversampled_s1_bits.'));
+mem2=cos(2*pi*f2*t+angle(oversampled_s2_bits.'));
+
+Tx=[];
+Tx_s1=[];
+Tx_s2=[];
+for p=1:length(bits)*length(pn)
+    mem_Tx=mem0(oversamplingrate*(p-1)+1:oversamplingrate*p);
+    E=sum(mem_Tx.^2);
+    Tx=[Tx mem_Tx/sqrt(E)];
+
+    mem_s1=mem1(oversamplingrate*(p-1)+1:oversamplingrate*p);
+    E=sum(mem_s1.^2);
+    Tx_s1=[Tx_s1 mem_s1/sqrt(E)];
+    mem_s2=mem2(oversamplingrate*(p-1)+1:oversamplingrate*p);
+    E=sum(mem_s2.^2);
+    Tx_s2=[Tx_s2 mem_s2/sqrt(E)];
+end
+
+l=1;
+noise=randn(1,length(Tx))*sig(l);
+Rx=Tx+noise;
+DSSS_FFT=abs(fftshift(fft(Tx)));
+FFT=abs(fftshift(fft(Rx)));
+
+
+Tx_s1_FFT=abs(fftshift(fft(Tx_s1)));
+Tx_s2_FFT=abs(fftshift(fft(Tx_s2)));
+noise_FFT=abs(fftshift(fft(noise)));
+figure(1)
+subplot(3,1,1)
+plot(t, oversampled_bits)
+title("Original signal")
+xlim([0, 1/(10^5)])
+subplot(3,1,2)
+plot(t, oversampled_spreaded_bits)
+title("Spreaded signal")
+xlim([0, 1/(10^5)])
+subplot(3,1,3)
+plot(t, Tx)
+title("Spreaded signal with modulation")
+xlim([0, 1/(10^6)])
+
+figure(2)
+plot(f, noise_FFT)
+hold on
+plot(f, Tx_s1_FFT)
+plot(f, Tx_s2_FFT)
+title("FFT of Noise and other modulation signals")
+ylim([0 3*10^4])
+figure(3)
+plot(f, DSSS_FFT, 'b')
+title("FFT of DSSS only")
+ylim([0 3*10^4])
+figure(4)
+plot(f, FFT, 'r')
+hold on
+plot(f, DSSS_FFT, 'b')
+hold off
+title("FFT of DSSS signal and Noise and other modulation signals")
+%xlim([7*10^7, 9*10^7]);
+ylim([0 3*10^4])
+sprintf("DSSS signal frequency: %d, signal1 frequency: %d, signal2_frequency: %d", fc, f1, f2)
+
+ts=0;
+figure(5)
+%Cylic autocorrelation
+[cf, tau, Tx_psd, p] = cyclic_autocorr(oversampled_s1_bits.', ts, fs);
+%index0=find(cf == 0);%cf=0의 spectral line삭제
+%Tx_psd(index0) = 0;
+plot(cf, Tx_psd);
+xlabel('x=cylic frequency')
+ylabel(sprintf('y=DSSS only cyclic autocorrelation (tau = %d)', tau(p)*(1/fs)))
+
+%figure(6)
+%[cf, tau, Tx_s1_psd, p] = cyclic_autocorr(Tx_s1, ts, fs);
+%%index1=find(cf == 0);%cf=0의 spectral line삭제
+%%Tx_s1_psd(index1) = 0;
+%plot(cf, Tx_s1_psd);
+%xlabel('x=cylic frequency')
+%ylabel(sprintf('y=Tx_s1 autocorrelation (tau = %d)', tau(p)*(1/fs)))
+%
+%figure(7)
+%[cf, tau, Tx_s2_psd, p] = cyclic_autocorr(Tx_s2, ts, fs);
+%%index2=find(cf == 0);%cf=0의 spectral line삭제
+%%Tx_s2_psd(index2) = 0;
+%plot(cf, Tx_s2_psd);
+%xlabel('x=cylic frequency')
+%ylabel(sprintf('y=Tx_s2 autocorrelation (tau = %d)', tau(p)*(1/fs)))
+
+figure(8)
+[cf, tau, Rx_psd, p] = cyclic_autocorr(Rx, ts, fs);
+%index4=find(cf == 0);%cf=0의 spectral line삭제
+%Rx_psd(index4) = 0;
+plot(cf, Rx_psd);
+xlabel('x=cylic frequency')
+ylabel(sprintf('y= Tx,Tx_s1,2,noise cyclic autocorrelation (tau = %d)', tau(p)*(1/fs)))
+figure(9)
+
+[tau, p, quadratic] = quadratic(Tx, ts);
+[coeffs, a, b] = customHaarCWT(quadratic, Tb, fs);
+imagesc(b, a/fs, abs(coeffs));
+xlabel('Time'); ylabel('Scale');
+title('Haar Wavelet Transform Coefficients');
+colorbar;

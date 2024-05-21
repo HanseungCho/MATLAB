@@ -1,0 +1,38 @@
+clear;clc; close all;
+%% Generating PSK waveform
+% PSK configuration
+M = 2;     % Modulation order
+% input bit source:
+in = randi([0, 1], 60000, 1);
+usedInput = in(1:log2(M)*(floor(length(in)/log2(M))));
+symbolInput = bit2int(usedInput, log2(M));
+
+% Generation
+phaseOffset = 0;
+waveform0 = pskmod(symbolInput, M, phaseOffset, 'gray');
+
+Fs = 1000;                          % Specify the sample rate of the waveform in Hz
+
+% Filtering:
+rcFilter = comm.RaisedCosineTransmitFilter('Shape', 'Square root', ...
+    'RolloffFactor', 0.2, ...
+    'OutputSamplesPerSymbol', 4, ...
+    'FilterSpanInSymbols', 10);
+%waveform = rcFilter(waveform0);
+Fs = Fs*rcFilter.OutputSamplesPerSymbol;
+for i=1:length(waveform0)
+    waveform(4*(i-1)+1:4*i)=waveform0(i);
+end
+waveform=waveform.';
+%waveform = awgn(waveform, 0, 'measured'); % received signalwaveform
+
+lengthSig = length(waveform); % length of the truncated signal
+tmp1 = zeros(lengthSig, 1);
+for tau = 0:1
+    circShiftSig = circshift(waveform,tau); % circular shifted signal
+    tmp1 = tmp1 + (1/lengthSig * fft(waveform .* conj(circShiftSig), lengthSig));
+end
+cycAutoCorr = (tmp1 / 10).';
+freqAxis = (0:length(cycAutoCorr)-1) * Fs / lengthSig ;
+plot(freqAxis, abs(cycAutoCorr))
+xlim([freqAxis(200), freqAxis(end-199)])

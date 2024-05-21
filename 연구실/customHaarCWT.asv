@@ -1,0 +1,16 @@
+function [coeffs, a, b] = customHaarCWT(signal, maxScale, step, Tb, fs)
+    len = length(signal);
+    a = (Tb/1000*fs:1:Tb*fs);  
+%심볼길이는 안다고 가정 Tb=1/(10^5) 대략 processing gain이 1000에서 1까지라고 잡고 search
+    b = 1:len;              
+    coeffs = zeros(length(scales), len);
+    
+    for s = 1:length(a)
+        scale = a(s);
+        % Haar 웨이블릿 정의
+        wavelet = [ones(1, scale), -ones(1, scale)];
+        wavelet = wavelet / sqrt(sum(wavelet.^2));
+        coeffs = conv(signal, wavelet);
+        coeffs = coeffs(length(wavelet):end-(length(wavelet)-1));            
+    end
+end
