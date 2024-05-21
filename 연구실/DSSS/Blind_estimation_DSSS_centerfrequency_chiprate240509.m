@@ -2,7 +2,7 @@ clc;
 clear;
 close all
 
-N_bit=5000;
+N_bit=1000;
 %임의의 PSK 신호 생성
 SNR=-10;
 M=2;
@@ -142,14 +142,57 @@ ylabel('y=cyclic autocorrelation')
 set(gcf, 'Color', 'w'); % figure 배경을 흰색으로 설정
 set(gca, 'Color', 'w'); % axes 배경을 흰색으로 설정
 
-%hold on;
-%m=mean(basebandRx_psd0);
-%peaks=(cfar_targets.') .* basebandRx_psd0;
-%index1=find((peaks > m));
-%[chiprate, indexi] = max(cf(index1));
-%scatter(cf(index1), basebandRx_psd0(index1), 'r*');
-%title('CFAR Target Detection');
-%legend('Input Signal', 'Detected Peaks');
-%sprintf("Estimated chip rate: %d", chiprate)
-%평균 보다 작아지는 지점 찾기 => 해당 지점을 평균을로 하는 gaussian kernel을 곱함
-%[index1v, index1index]=max(basebandRx_psd0<m);
+% 진행률 표시를 위한 waitbar 생성
+h = waitbar(0, 'Processing...');
+bin=0;
+CFAR=0.1;
+sample_shift=0:oversamplingrate*Processing_Gain;
+L=127*4*10+1;
+window=hamming(L);
+detection=zeros(1,length(cf)-L);
+for y=1+(L-1)/2:length(cf)-((L-1)/2)
+    v=cyclic_covarianceV(basebandRx, sample_shift, t, cf(y));
+    S = zeros(length(sample_shift), length(sample_shift));
+    Scj = zeros(length(sample_shift), length(sample_shift));
+    for m = 1 : length(sample_shift)
+        for n = 1 : length(sample_shift)
+            for s = -(L - 1) / 2 : (L - 1) / 2
+                fv1 = F(basebandRx, sample_shift(n), t, cf(y - s));
+                fv2 = F(basebandRx, sample_shift(m), t, cf(y + s));
+                fv3 = conj(F(basebandRx, sample_shift(n), t, cf(y + s)));
+                
+                S(m, n) = S(m, n) + fv1 * fv2 * window(s + (L - 1) / 2 + 1); % 윈도우 함수의 인덱스가 음수가 되지 않도록 조정
+                Scj(m, n) = Scj(m, n) + fv2 * fv3 * window(s + (L - 1) / 2 + 1);
+            end
+        end
+    end
+    S = S / (N_bit * L);
+    Scj = Scj / (N_bit * L);
+    sig1=real((S+Scj)/2);
+    sig2=imag((S-Scj)/2);
+    sig3=imag((S+Scj)/2);
+    sig4=real((Scj-S)/2);
+    CM=[sig1 sig2;sig3 sig4];
+    ML=v*CM*v';
+    threshold= solve(chi2cdf(gamma, length(v)) == CFAR, gamma); %자유도: Covariance vector 길이
+    if ML >= threshold
+        detection(y-(L-1)/2)=1;
+    end
+    % 진행률 업데이트
+    bin=bin+1;
+    waitbar(bin/(length(cf)-L), h);
+end
+% waitbar 닫기
+close(h);
+
+%피크 탐지
+hold on;
+m=mean(basebandRx_psd0);
+peaks=(cfar_targets.') .* basebandRx_psd0;
+index1=find((peaks > m));
+[chiprate, indexi] = max(cf(index1));
+scatter(cf(index1), basebandRx_psd0(index1), 'r*');
+title('CFAR Target Detection');
+legend('Input Signal', 'Detected Peaks');
+sprintf("Estimated chip rate: %d", chiprate)
+

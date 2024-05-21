@@ -2,7 +2,7 @@ clc;
 clear;
 close all
 
-N_bit=100000;
+N_bit=10000;
 %임의의 PSK 신호 생성
 SNR=-5;
 
