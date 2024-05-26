@@ -40,10 +40,10 @@ rep_C2=repmat(C2, 1, length(JPL_C)/length(C2));
 rep_C3=repmat(C3, 1, length(JPL_C)/length(C3));
 rep_C4=repmat(C4, 1, length(JPL_C)/length(C4));
 rep_C5=repmat(C5, 1, length(JPL_C)/length(C5));
-snr=-15:10;
+snr=-20:-8;
 %딜레이 추가
 
-N=1000;
+N=100;
 for m=1:length(snr)
     error=0;
     for n=1:N
@@ -56,20 +56,19 @@ for m=1:length(snr)
         Delayed_K5_C=awgn(Delayed_K5_C, snr(m));
         
         %Autocorrelation
-        shift=0:43890*2+1;
-        for i=1:length(shift)
+        for i=1:length(C1)
             JPLC1_autocorr(i)=sum(Delayed_JPL_C.*circshift(rep_C1,i-1));
         end
-        for i=1:length(shift)
+        for i=1:length(C2)
             JPLC2_autocorr(i)=sum(Delayed_JPL_C.*circshift(rep_C2,i-1));
         end
-        for i=1:length(shift)
+        for i=1:length(C3)
             JPLC3_autocorr(i)=sum(Delayed_JPL_C.*circshift(rep_C3,i-1));
         end
-        for i=1:length(shift)
+        for i=1:length(C4)
             JPLC4_autocorr(i)=sum(Delayed_JPL_C.*circshift(rep_C4,i-1));
         end
-        for i=1:length(shift)
+        for i=1:length(C5)
             JPLC5_autocorr(i)=sum(Delayed_JPL_C.*circshift(rep_C5,i-1));
         end
         [v1,index1]=max(JPLC1_autocorr(1:length(C1)));
