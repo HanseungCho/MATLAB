@@ -1,6 +1,4 @@
-function [cf, tau, psd, p] = cyclic_autocorr(input, sample_shift, fs)
-    tau=-(length(input)-1):1:length(input)-1; 
-    p=length(input)+sample_shift;
+function [cf, psd] = cyclic_autocorr(input, sample_shift, fs) 
     shifted_input=circshift(input, sample_shift);
     quadratic=input.*conj(shifted_input); %x(t)x*(t-tau)
     caf=fftshift(fft(quadratic));

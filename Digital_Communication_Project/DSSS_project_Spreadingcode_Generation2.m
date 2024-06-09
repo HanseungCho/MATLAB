@@ -70,30 +70,60 @@ K5_TPC=p/length(K5_D);
 JPL_DC=mean(JPL_C);
 K5_DC=mean(K5_C);
 
-%IS-95 CDMA walsh code generation
-N=15; %2^15=32,768 length walsh code
-H=1;
-for i=1:N
-    H=[H H; H -H];
+%IS-95 PN code
+%Inphase PN code polynomial: x^15+x^13+x^9+x^8+x^7+x^5+1
+SRI=ones(1,15);
+PNI(1)=SRI(15);
+for i=1:2^length(SRI)-2
+   memI=mod(SRI(15)+SRI(13)+SRI(9)+SRI(8)+SRI(7)+SRI(5),2);
+   SRI=circshift(SRI,1);
+   SRI(1)=memI;
+   PNI(i+1)=SRI(6);
 end
-Walsh_C=H(2,:);
-Walsh_D=(Walsh_C+1)/2;
-
-shift=0:length(Walsh_D)*2+1;
+PNcodeI=2*PNI-1;
+%Quadrature PN code polynomial: x^15+x^12+x^11+x^10+x^6+x^5+x^4+x^3+1
+SRQ=ones(1,15);
+PNQ(1)=SRQ(15);
+for i=1:2^length(SRQ)-2
+   memQ=mod(SRQ(15)+SRQ(12)+SRQ(11)+SRQ(10)+SRQ(6)+SRQ(5)+SRQ(4)+SRQ(3),2);
+   SRQ=circshift(SRQ,1);
+   SRQ(1)=memQ;
+   PNQ(i+1)=SRQ(6);
+end
+PNcodeQ=2*PNQ-1;
+%Autocorrelation
+shift=0:length(PNcodeI)+1;
 for i=1:length(shift)
-    Walsh_autocorr(i)=sum(Walsh_C.*circshift(Walsh_C,shift(i)));
+    PNcodeI_autocorr(i)=sum(PNcodeI.*circshift(PNcodeI,shift(i)));
 end
-figure(2)
-stem(shift,Walsh_autocorr/length(Walsh_C)) %PNcode 길이로 정규화
-title("IS-95 Walsh Autocorrelation")
+figure(2) 
+plot(shift, PNcodeI_autocorr/length(PNcodeI_autocorr))
+title("PNcode(Inphase) Autocorrelation")
+shift=0:length(PNcodeQ)+1;
+for i=1:length(shift)
+    PNcodeQ_autocorr(i)=sum(PNcodeQ.*circshift(PNcodeQ,shift(i)));
+end
+
+figure(3) 
+plot(shift, PNcodeQ_autocorr/length(PNcodeQ_autocorr))
+title("PNcode(Quadrature) Autocorrelation")
 %transition per chip
-k=0;
-for i=2:length(Walsh_D)   
-    if Walsh_D(i) ~= Walsh_D(i-1)
-        k=k+1;
+l=0;
+for i=2:length(PNcodeI)   
+    if PNcodeI(i) ~= PNcodeI(i-1)
+        l=l+1;
     else
     end
 end
-Walsh_TPC=k/length(Walsh_D);
+PNcodeI_TPC=l/length(PNcodeI);
+p=0;
+for i=2:length(PNcodeQ)   
+    if PNcodeQ(i) ~= PNcodeQ(i-1)
+        p=p+1;
+    else
+    end
+end
+PNcodeQ_TPC=p/length(PNcodeQ);
 %DC bias
-Walsh_DC=mean(Walsh_C);
+PNcodeI_DC=mean(PNcodeI);
+PNcodeQ_DC=mean(PNcodeQ);

@@ -18,17 +18,14 @@ rcFilter = comm.RaisedCosineTransmitFilter('Shape', 'Square root', ...
     'RolloffFactor', 0.2, ...
     'OutputSamplesPerSymbol', 4, ...
     'FilterSpanInSymbols', 10);
-%waveform = rcFilter(waveform0);
+waveform = rcFilter(waveform0);
 Fs = Fs*rcFilter.OutputSamplesPerSymbol;
-for i=1:length(waveform0)
-    waveform(4*(i-1)+1:4*i)=waveform0(i);
-end
-waveform=waveform.';
-%waveform = awgn(waveform, 0, 'measured'); % received signalwaveform
+
+waveform = awgn(waveform, 0, 'measured'); % received signalwaveform
 
 lengthSig = length(waveform); % length of the truncated signal
 tmp1 = zeros(lengthSig, 1);
-for tau = 0:1
+for tau = 0:10
     circShiftSig = circshift(waveform,tau); % circular shifted signal
     tmp1 = tmp1 + (1/lengthSig * fft(waveform .* conj(circShiftSig), lengthSig));
 end

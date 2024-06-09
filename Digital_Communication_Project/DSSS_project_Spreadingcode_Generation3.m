@@ -41,22 +41,23 @@ rep_C3=repmat(C3, 1, length(JPL_C)/length(C3));
 rep_C4=repmat(C4, 1, length(JPL_C)/length(C4));
 rep_C5=repmat(C5, 1, length(JPL_C)/length(C5));
 snr=-35:-12;
-%딜레이 추가
 
 N=10^4;
-for m=1:length(snr)
+for m=1:length(snr) %SNR에 따라 성능 검증
     JPL_detection=0;
     K5_detection=0;
     for n=1:N
+        %랜덤한 딜레이를 추가하여 신호 생성
         delay=randi([1,length(JPL_C)]);
         Delayed_JPL_C=circshift(JPL_C, delay);
         Delayed_K5_C=circshift(K5_C, delay);
         Original_JPL_C=Delayed_JPL_C;
         Original_K5_C=Delayed_K5_C;
+        %신호에 SNR에 따른 AWGN 추가
         Delayed_JPL_C=awgn(Delayed_JPL_C, snr(m));
         Delayed_K5_C=awgn(Delayed_K5_C, snr(m));
         
-        %JPL Autocorrelation
+        %각 branch 별로 Autocorrelation
         for i=1:length(C1)
             JPLC1_autocorr(i)=sum(Delayed_JPL_C.*circshift(rep_C1,i-1));
         end
@@ -72,16 +73,18 @@ for m=1:length(snr)
         for i=1:length(C5)
             JPLC5_autocorr(i)=sum(Delayed_JPL_C.*circshift(rep_C5,i-1));
         end
+        %각 branch 별로 autocorrelation 피크 지점 탐지로 phase 확보
         [v1,index1]=max(JPLC1_autocorr(1:length(C1)));
         [v2,index2]=max(JPLC2_autocorr(1:length(C2)));
         [v3,index3]=max(JPLC3_autocorr(1:length(C3)));
         [v4,index4]=max(JPLC4_autocorr(1:length(C4)));
         [v5,index5]=max(JPLC5_autocorr(1:length(C5)));
-        index1=index1-1;%index에서 1을 빼면 각 코드의 timing offset
+        index1=index1-1;%index에서 1을 빼서 0점 보정
         index2=index2-1;
         index3=index3-1;
         index4=index4-1;
         index5=index5-1;
+        %앞에서 찾은 phase만큼 original C1~C5 코드를 딜레이 시킨후 JPL코드 합성
         Offset_D1=circshift(D1,index1);
         Offset_D2=circshift(D2,index2);
         Offset_D3=circshift(D3,index3);
@@ -107,6 +110,7 @@ for m=1:length(snr)
             
         end
         %K5 Autocorrelation
+        %각 branch 별로 Autocorrelation
         for i=1:length(C1)
             K5C1_autocorr(i)=sum(Delayed_K5_C.*circshift(rep_C1,i-1));
         end
@@ -122,6 +126,7 @@ for m=1:length(snr)
         for i=1:length(C5)
             K5C5_autocorr(i)=sum(Delayed_K5_C.*circshift(rep_C5,i-1));
         end
+        %각 branch 별로 autocorrelation 피크 지점 탐지로 phase 확보
         [K5v1,K5index1]=max(K5C1_autocorr(1:length(C1)));
         [K5v2,K5index2]=max(K5C2_autocorr(1:length(C2)));
         [K5v3,K5index3]=max(abs(K5C3_autocorr(1:length(C3))));
@@ -137,6 +142,7 @@ for m=1:length(snr)
         K5Offset_C3=circshift(C3,K5index3);
         K5Offset_C4=circshift(C4,K5index4);
         K5Offset_C5=circshift(C5,K5index5);
+        %앞에서 찾은 phase만큼 original C1~C5 코드를 딜레이 시킨후 K5코드 합성
         for i=1:43890
             Regen_K5_C(i)=sign(3*K5Offset_C1(1)+K5Offset_C2(1)-K5Offset_C3(1)-K5Offset_C4(1)+K5Offset_C5(1));
             K5Offset_C1=circshift(K5Offset_C1,-1);
