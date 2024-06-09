@@ -2,7 +2,7 @@ clc;
 clear;
 close all
 %cylic covariance(fft)한 것을 fftshift하지 않고 periodic function이라고 생각하고 
-N_bit=80;
+N_bit=300;
 %임의의 PSK 신호 생성
 SNR=-10:0;
 M=2;
@@ -15,7 +15,7 @@ Processing_Gain=length(pn);
 Rc=Processing_Gain/Tb;%chip rate => chip rate
 fs=(1/Tb)*length(pn)*oversamplingrate;
 CFAR=1/(10^5);
-sample_shift=0:100; %한 심볼 내에서 tau를 참고
+sample_shift=0:0; %한 심볼 내에서 tau를 참고
 
 simulation=10^3;
 time=zeros(length(SNR), simulation);
@@ -38,7 +38,7 @@ for u=1:length(SNR)
         
         waveform0=rcfilter(spreaded_bits.').';
         Rx0=awgn(waveform0, SNR(u), 'measured');%SNR db scale
-        Rx=Rx0(1:2^14); %FFT 연산의 속도를 고려하여 2의 power로
+        Rx=Rx0(1:2^16); %FFT 연산의 속도를 고려하여 2의 power로
         %%%%%%%%%%%%여기까지가 기저대역 신호 생성%%%%%%%%%%%%
         cf=linspace(-fs/2, fs/2-fs/length(Rx), length(Rx));    
             
